@@ -1,0 +1,15 @@
+{
+  "manifest_version": 3,
+  "name": "Glance (test build)",
+  "version": "0.1.0",
+  "description": "Shows a small, clearly labelled ad after AI replies. Test build with house ads only.",
+  "permissions": ["storage"],
+  "content_scripts": [
+    {
+      "matches": ["https://chatgpt.com/*", "https://claude.ai/*", "https://gemini.google.com/*"],
+      "js": ["ads.js", "content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "action": { "default_title": "Glance", "default_popup": "popup.html" }
+}

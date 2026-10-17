@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Glance</title>
+<style>
+:root{--ink:#121212;--panel:#1b1b1b;--line:#2b2b2b;--paper:#efede8;--gain:#22c55e;--lilac:#c084fc;--amber:#f59e0b;--mute:#8a8a8a}
+*{box-sizing:border-box}
+body{margin:0;width:340px;background:var(--ink);color:var(--paper);font:14px system-ui,-apple-system,"Segoe UI",sans-serif}
+.mono{font:11px ui-monospace,Consolas,monospace;letter-spacing:.08em;color:var(--mute);text-transform:uppercase}
+.cut{clip-path:polygon(0 0,calc(100% - 10px) 0,100% 10px,100% 100%,10px 100%,0 calc(100% - 10px))}
+header{display:flex;justify-content:space-between;align-items:center;padding:14px 16px 10px;border-bottom:1px dashed var(--line)}
+.logo{font-size:24px;font-weight:800;letter-spacing:-.03em}
+.chip{display:flex;align-items:center;gap:6px;background:var(--panel);padding:4px 9px}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--amber)}
+nav{display:flex;gap:6px;padding:10px 16px 0}
+nav button{flex:1;background:var(--panel);color:var(--mute);border:0;padding:8px 0;font:600 11px ui-monospace,Consolas,monospace;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;transition:transform .15s,background .15s}
+nav button:hover{transform:translateY(-2px);color:var(--paper)}
+nav button[aria-selected=true]{background:var(--paper);color:var(--ink)}
+section{display:none;padding:12px 16px 16px}
+section.on{display:block;animation:in .25s ease}
+@keyframes in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.card{background:var(--panel);padding:12px;position:relative}
+.wide{grid-column:1/-1}
+.big{font-size:28px;font-weight:800;line-height:1.1;margin-top:4px}
+.g{color:var(--gain)}.p{color:var(--lilac)}.a{color:var(--amber)}
+.hero .big{font-size:38px}
+.sticker{position:absolute;pointer-events:none}
+.coin{position:absolute;right:10px;top:10px;width:54px;height:54px;background:none;border:0;padding:0;cursor:pointer;animation:float 3.5s ease-in-out infinite}
+.coin svg,.sticker svg{width:100%;height:100%;display:block}
+.coin:active{transform:scale(.9)}
+@keyframes float{0%,100%{transform:translateY(0) rotate(-4deg)}50%{transform:translateY(-6px) rotate(6deg)}}
+.spark1{right:70px;top:8px;width:20px;height:20px;animation:float 4s ease-in-out infinite}
+.zap{right:14px;bottom:10px;width:24px;height:24px;animation:float 3s ease-in-out infinite reverse}
+.bar{height:8px;background:var(--line);margin-top:10px}
+.bar i{display:block;height:100%;width:0;background:var(--gain);transition:width .9s cubic-bezier(.2,.8,.2,1)}
+.chips{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.chip2{background:var(--panel);color:var(--paper);border:1px solid var(--line);padding:10px;text-align:left;font:600 13px system-ui;cursor:pointer;transition:transform .15s,background .15s}
+.chip2:hover:not(:disabled){transform:translateY(-2px) rotate(-1deg);background:#232323}
+.chip2[aria-pressed=true]{background:var(--gain);color:var(--ink);border-color:var(--gain)}
+.chip2:disabled{opacity:.45;cursor:not-allowed}
+.chip2 small{display:block;font:10px ui-monospace,Consolas,monospace;letter-spacing:.06em;opacity:.8;margin-top:2px}
+.req{width:100%;margin-top:10px;background:var(--paper);color:var(--ink);border:0;padding:12px;font:700 12px ui-monospace,Consolas,monospace;letter-spacing:.1em;text-transform:uppercase}
+.req:disabled{opacity:.5}
+.row{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.switch{position:relative;width:44px;height:24px;flex:none}
+.switch input{opacity:0;position:absolute;inset:0;cursor:pointer;margin:0;z-index:1}
+.switch span{position:absolute;inset:0;background:var(--line);transition:background .2s}
+.switch span::after{content:"";position:absolute;left:3px;top:3px;width:18px;height:18px;background:var(--paper);transition:transform .2s}
+.switch input:checked+span{background:var(--gain)}
+.switch input:checked+span::after{transform:translateX(20px);background:var(--ink)}
+.switch input:focus-visible+span{outline:2px solid var(--lilac);outline-offset:2px}
+a{color:var(--lilac)}
+.note{margin:10px 0 0;color:var(--mute);line-height:1.5;font-size:12px}
+button:focus-visible{outline:2px solid var(--gain);outline-offset:2px}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<header>
+  <span class="logo">glance</span>
+  <span class="chip mono"><span class="dot"></span>Test build</span>
+</header>
+
+<nav role="tablist">
+  <button role="tab" data-tab="earn" aria-selected="true">Earn</button>
+  <button role="tab" data-tab="cash" aria-selected="false">Cash out</button>
+  <button role="tab" data-tab="about" aria-selected="false">Settings</button>
+</nav>
+
+<section id="earn" class="on">
+  <div class="grid">
+    <div class="card cut hero wide" style="min-height:110px">
+      <div class="mono">Simulated balance</div>
+      <div class="big g" id="sim">₹0.00</div>
+      <div class="mono" style="margin-top:6px">Tap the coin</div>
+      <button class="coin" id="coin" aria-label="Tap the coin for a little celebration">
+        <svg viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="28" fill="#fbbf24" stroke="#121212" stroke-width="3"/><circle cx="32" cy="32" r="20" fill="#fde68a" stroke="#121212" stroke-width="2"/><circle cx="25" cy="28" r="3" fill="#121212"/><circle cx="39" cy="28" r="3" fill="#121212"/><path d="M23 37q9 9 18 0" fill="none" stroke="#121212" stroke-width="3" stroke-linecap="round"/></svg>
+      </button>
+      <span class="sticker spark1"><svg viewBox="0 0 64 64" aria-hidden="true"><path d="M32 4l7 21 21 7-21 7-7 21-7-21-21-7 21-7z" fill="#c084fc" stroke="#121212" stroke-width="3" stroke-linejoin="round"/></svg></span>
+    </div>
+    <div class="card cut"><div class="mono">Ads today</div><div class="big" id="today">0</div></div>
+    <div class="card cut"><div class="mono">Ads total</div><div class="big p" id="total">0</div></div>
+  </div>
+</section>
+
+<section id="cash">
+  <div class="card cut" style="position:relative">
+    <div class="mono">Payout minimum ₹100</div>
+    <div class="big a" id="pct">0%</div>
+    <div class="bar"><i id="bar"></i></div>
+    <span class="sticker zap"><svg viewBox="0 0 64 64" aria-hidden="true"><path d="M36 4L12 36h16l-4 24 28-34H35z" fill="#f59e0b" stroke="#121212" stroke-width="3" stroke-linejoin="round"/></svg></span>
+  </div>
+  <div class="chips" role="group" aria-label="Payout method">
+    <button class="chip2 cut" data-m="Amazon gift card" aria-pressed="true">Amazon<small>GIFT CARD</small></button>
+    <button class="chip2 cut" data-m="Flipkart voucher" aria-pressed="false">Flipkart<small>VOUCHER</small></button>
+    <button class="chip2 cut" data-m="PayPal" aria-pressed="false">PayPal<small>MIN ₹500</small></button>
+    <button class="chip2 cut" disabled>UPI<small>COMING SOON</small></button>
+  </div>
+  <button class="req cut" id="req" disabled>Test mode · no real payouts</button>
+</section>
+
+<section id="about">
+  <div class="card cut">
+    <div class="row">
+      <div><div style="font-weight:700">Show ads after AI replies</div><div class="mono" style="margin-top:2px">ChatGPT · Claude · Gemini</div></div>
+      <label class="switch"><input type="checkbox" id="on" aria-label="Show ads after AI replies"><span></span></label>
+    </div>
+  </div>
+  <p class="note">No real money is earned in this test build. Chat text is never read or stored. Ads are always labelled.</p>
+  <p class="note"><a href="https://glance-jade.vercel.app" target="_blank" rel="noopener">Open Glance website</a></p>
+</section>
+
+<script src="popup.js"></script>
+</body>
+</html>
