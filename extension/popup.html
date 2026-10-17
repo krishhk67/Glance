@@ -4,9 +4,13 @@
 <meta charset="utf-8">
 <title>Glance</title>
 <style>
+@font-face{font-family:"Jost";src:url("fonts/jost-latin-400-normal.woff2") format("woff2");font-weight:400}
+@font-face{font-family:"Jost";src:url("fonts/jost-latin-600-normal.woff2") format("woff2");font-weight:600}
+@font-face{font-family:"Jost";src:url("fonts/jost-latin-700-normal.woff2") format("woff2");font-weight:700}
+@font-face{font-family:"Jost";src:url("fonts/jost-latin-800-normal.woff2") format("woff2");font-weight:800}
 :root{--ink:#121212;--panel:#1b1b1b;--line:#2b2b2b;--paper:#efede8;--gain:#22c55e;--lilac:#c084fc;--amber:#f59e0b;--mute:#8a8a8a}
 *{box-sizing:border-box}
-body{margin:0;width:340px;background:var(--ink);color:var(--paper);font:14px system-ui,-apple-system,"Segoe UI",sans-serif}
+body{margin:0;width:340px;background:var(--ink);color:var(--paper);font:15px "Jost",system-ui,sans-serif}
 .mono{font:11px ui-monospace,Consolas,monospace;letter-spacing:.08em;color:var(--mute);text-transform:uppercase}
 .cut{clip-path:polygon(0 0,calc(100% - 10px) 0,100% 10px,100% 100%,10px 100%,0 calc(100% - 10px))}
 header{display:flex;justify-content:space-between;align-items:center;padding:14px 16px 10px;border-bottom:1px dashed var(--line)}
@@ -36,7 +40,7 @@ section.on{display:block;animation:in .25s ease}
 .bar{height:8px;background:var(--line);margin-top:10px}
 .bar i{display:block;height:100%;width:0;background:var(--gain);transition:width .9s cubic-bezier(.2,.8,.2,1)}
 .chips{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
-.chip2{background:var(--panel);color:var(--paper);border:1px solid var(--line);padding:10px;text-align:left;font:600 13px system-ui;cursor:pointer;transition:transform .15s,background .15s}
+.chip2{background:var(--panel);color:var(--paper);border:1px solid var(--line);padding:10px;text-align:left;font:600 14px "Jost",system-ui,sans-serif;cursor:pointer;transition:transform .15s,background .15s}
 .chip2:hover:not(:disabled){transform:translateY(-2px) rotate(-1deg);background:#232323}
 .chip2[aria-pressed=true]{background:var(--gain);color:var(--ink);border-color:var(--gain)}
 .chip2:disabled{opacity:.45;cursor:not-allowed}

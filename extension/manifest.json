@@ -1,9 +1,10 @@
 {
   "manifest_version": 3,
   "name": "Glance (test build)",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Shows a small, clearly labelled ad after AI replies. Test build with house ads only.",
   "permissions": ["storage"],
+  "icons": { "16": "icons/icon16.png", "48": "icons/icon48.png", "128": "icons/icon128.png" },
   "content_scripts": [
     {
       "matches": ["https://chatgpt.com/*", "https://claude.ai/*", "https://gemini.google.com/*"],
@@ -11,5 +12,9 @@
       "run_at": "document_idle"
     }
   ],
-  "action": { "default_title": "Glance", "default_popup": "popup.html" }
+  "action": {
+    "default_title": "Glance",
+    "default_popup": "popup.html",
+    "default_icon": { "16": "icons/icon16.png", "48": "icons/icon48.png", "128": "icons/icon128.png" }
+  }
 }
