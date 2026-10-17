@@ -4,3 +4,13 @@ body{background:#121212;color:#efede8}
 .lbl{font-family:var(--font-mono);font-size:12px;letter-spacing:.08em;color:#8a8a8a}
 :focus-visible{outline:2px solid #22c55e;outline-offset:2px}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+@keyframes float{0%,100%{transform:translateY(0) rotate(var(--r,0deg))}50%{transform:translateY(-10px) rotate(calc(var(--r,0deg) + 6deg))}}
+@keyframes marquee{to{transform:translateX(-50%)}}
+@keyframes pop{0%{transform:scale(1)}40%{transform:scale(1.25) rotate(-8deg)}100%{transform:scale(1)}}
+@keyframes toastin{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+.float{animation:float 5s ease-in-out infinite}
+.marquee{display:flex;width:max-content;animation:marquee 28s linear infinite}
+.pop:active{animation:pop .3s}
+.tilt{transition:transform .2s}.tilt:hover:not(:disabled){transform:rotate(-1.5deg) translateY(-3px)}
+.toast{animation:toastin .4s}
+@media (prefers-reduced-motion:reduce){.float,.marquee,.toast{animation:none}}

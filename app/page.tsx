@@ -1,5 +1,10 @@
 "use client";
 import { useEffect, useState } from "react";
+import type { User } from "@supabase/supabase-js";
+import { supabase } from "@/lib/supabase";
+import { Coin, Sparkle, GiftCard, Zap } from "@/components/Stickers";
+
+const SAMPLE = ["Sample: a user just earned ₹4.20 from 12 replies", "Sample: a ₹250 Amazon voucher was requested", "Sample: a user just earned ₹1.60 from 5 replies", "Sample: a ₹500 PayPal payout was requested"];
 
 const BRAND = "Glance"; // placeholder name, change anywhere here
 const AD_VALUE = 0.8; // illustrative ₹ an advertiser pays per ad shown
@@ -30,6 +35,34 @@ export default function Home() {
   const [open, setOpen] = useState<number | null>(0);
   const [email, setEmail] = useState("");
   const [joined, setJoined] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
+  const [authOpen, setAuthOpen] = useState(false);
+  const [signUp, setSignUp] = useState(true);
+  const [pw, setPw] = useState("");
+  const [msg, setMsg] = useState("");
+  const [toast, setToast] = useState(0);
+  useEffect(() => { const t = setInterval(() => setToast((i) => (i + 1) % SAMPLE.length), 4500); return () => clearInterval(t); }, []);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => setUser(data.user));
+    const { data } = supabase.auth.onAuthStateChange((_e, session) => setUser(session?.user ?? null));
+    return () => data.subscription.unsubscribe();
+  }, []);
+
+  async function submitAuth() {
+    setMsg("");
+    const creds = { email, password: pw };
+    const { error } = signUp ? await supabase.auth.signUp(creds) : await supabase.auth.signInWithPassword(creds);
+    if (error) return setMsg(error.message);
+    setMsg(signUp ? "Check your email to confirm, then sign in." : "");
+    if (!signUp) setAuthOpen(false);
+  }
+
+  async function joinWaitlist() {
+    if (!email.includes("@")) return;
+    const { error } = await supabase.from("upi_waitlist").insert({ email });
+    if (!error || error.code === "23505") setJoined(true);
+  }
 
   useEffect(() => {
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
@@ -44,7 +77,14 @@ export default function Home() {
     <main className="mx-auto max-w-5xl px-5 pb-24">
       <header className="flex items-center justify-between py-6">
         <span className="text-2xl font-bold">{BRAND.toLowerCase()}</span>
-        <button className="cut bg-paper px-4 py-2 text-sm font-semibold text-ink" onClick={() => alert("Sign-in arrives with Supabase auth")}>Sign in</button>
+        {user ? (
+          <div className="flex items-center gap-3 text-sm">
+            <span className="lbl">{user.email}</span>
+            <button className="cut bg-paper px-4 py-2 font-semibold text-ink" onClick={() => supabase.auth.signOut()}>Sign out</button>
+          </div>
+        ) : (
+          <button className="cut bg-paper px-4 py-2 text-sm font-semibold text-ink" onClick={() => setAuthOpen(true)}>Sign in</button>
+        )}
       </header>
 
       <section className="grid gap-6 py-12 md:grid-cols-2 md:items-center">
@@ -57,13 +97,40 @@ export default function Home() {
             <a href="#calc" className="cut border border-line px-5 py-3">Calculate earnings</a>
           </div>
         </div>
+        <div className="relative">
+          <Sparkle className="float absolute -left-6 -top-6 h-12 w-12" />
+          <GiftCard className="float absolute -bottom-6 -right-4 z-10 h-16 w-16 [--r:8deg]" />
+          <Zap className="float absolute -right-3 -top-7 z-10 h-12 w-12 [--r:-10deg]" />
         <Box>
           <p className="lbl">Live demo balance</p>
           <p className="mt-2 text-5xl font-bold text-gain">{inr(bal)}</p>
+          <button onClick={() => setBal((b) => +(b + 1).toFixed(2))} className="pop mt-3 flex items-center gap-2 text-sm text-neutral-300" aria-label="Tap the coin to add ₹1 to the demo balance"><Coin className="float h-12 w-12" /> Tap the coin (+₹1 demo)</button>
           <p className="mt-2 text-sm text-neutral-400">Ticks up as ads are shown. Demo only.</p>
           <div className="mt-5 h-2 bg-line"><div className="h-2 bg-gain transition-all" style={{ width: `${Math.min(100, (bal / 100) * 100)}%` }} /></div>
           <p className="lbl mt-2">Progress to ₹100 minimum</p>
         </Box>
+        </div>
+      </section>
+
+      <div className="my-6 overflow-hidden border-y border-line py-3" aria-hidden="true">
+        <div className="marquee gap-8">
+          {[0, 1].map((k) => (
+            <div key={k} className="flex shrink-0 items-center gap-8 pr-8 font-mono text-sm text-neutral-400">
+              {["Amazon gift cards", "Flipkart vouchers", "PayPal", "UPI coming soon"].map((t) => (
+                <span key={t} className="flex items-center gap-8"><Sparkle className="h-5 w-5" />{t}</span>
+              ))}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <section className="py-8">
+        <p className="lbl">How it works</p>
+        <div className="mt-4 grid gap-4 md:grid-cols-3">
+          {[[Zap, "1. Install", "Add the extension to Chrome in one click."], [Coin, "2. Chat", "Use your AI as usual. A small ad shows after replies."], [GiftCard, "3. Cash out", "Pick a voucher or PayPal when you pass the minimum."]].map(([Icon, t, d]: any) => (
+            <Box key={t}><Icon className="h-14 w-14" /><h3 className="mt-3 text-xl font-semibold">{t}</h3><p className="mt-1 text-neutral-400">{d}</p></Box>
+          ))}
+        </div>
       </section>
 
       <section id="calc" className="grid gap-6 py-8 md:grid-cols-2">
@@ -91,7 +158,7 @@ export default function Home() {
         <div className="mt-5 grid gap-4 sm:grid-cols-2 md:grid-cols-4">
           {PAYOUTS.map((p) => (
             <button key={p.id} disabled={p.soon} aria-pressed={pick === p.id} onClick={() => setPick(p.id)}
-              className={`cut p-5 text-left transition ${p.soon ? "bg-panel opacity-50" : pick === p.id ? "bg-gain text-ink" : "bg-panel hover:bg-line"}`}>
+              className={`cut tilt p-5 text-left transition ${p.soon ? "bg-panel opacity-50" : pick === p.id ? "bg-gain text-ink" : "bg-panel hover:bg-line"}`}>
               <span className="block text-lg font-semibold">{p.name}</span>
               <span className="lbl" style={pick === p.id && !p.soon ? { color: "#121212" } : undefined}>{p.note}</span>
             </button>
@@ -101,7 +168,7 @@ export default function Home() {
           {joined ? <p className="text-gain">You're on the UPI waitlist.</p> : (
             <div className="flex flex-col gap-3 sm:flex-row">
               <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email for UPI launch" className="flex-1 border border-line bg-ink px-4 py-3" />
-              <button onClick={() => email.includes("@") && setJoined(true)} className="cut bg-paper px-5 py-3 font-semibold text-ink">Join UPI waitlist</button>
+              <button onClick={joinWaitlist} className="cut bg-paper px-5 py-3 font-semibold text-ink">Join UPI waitlist</button>
             </div>)}
         </Box>
       </section>
@@ -117,6 +184,19 @@ export default function Home() {
           ))}
         </div>
       </section>
+      <div className="toast fixed bottom-4 left-4 z-10 max-w-xs bg-panel px-4 py-3 text-sm text-neutral-300 shadow-lg" role="status" key={toast}>{SAMPLE[toast]}</div>
+      {authOpen && (
+        <div className="fixed inset-0 z-10 grid place-items-center bg-black/70 p-5" onClick={() => setAuthOpen(false)}>
+          <div className="cut w-full max-w-sm bg-panel p-6" role="dialog" aria-label="Sign in" onClick={(e) => e.stopPropagation()}>
+            <p className="lbl">{signUp ? "Create account" : "Welcome back"}</p>
+            <input value={email} onChange={(e) => setEmail(e.target.value)} type="email" placeholder="Email" className="mt-4 w-full border border-line bg-ink px-4 py-3" />
+            <input value={pw} onChange={(e) => setPw(e.target.value)} type="password" placeholder="Password (min 6)" className="mt-3 w-full border border-line bg-ink px-4 py-3" />
+            <button onClick={submitAuth} className="cut mt-4 w-full bg-gain px-5 py-3 font-semibold text-ink">{signUp ? "Sign up" : "Sign in"}</button>
+            {msg && <p className="mt-3 text-sm text-amber" role="status">{msg}</p>}
+            <button className="mt-4 text-sm text-neutral-400 underline" onClick={() => setSignUp(!signUp)}>{signUp ? "Have an account? Sign in" : "New here? Sign up"}</button>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
