@@ -59,6 +59,22 @@ a{color:var(--lilac)}
 .note{margin:10px 0 0;color:var(--mute);line-height:1.5;font-size:12px}
 button:focus-visible{outline:2px solid var(--gain);outline-offset:2px}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+.acc{width:100%;margin-top:8px;display:flex;justify-content:space-between;align-items:center;background:var(--panel);color:var(--paper);border:0;padding:12px;font:700 14px "Jost",system-ui,sans-serif;cursor:pointer}
+.chev{transition:transform .3s;color:var(--gain)}
+.acc[aria-expanded=true] .chev{transform:rotate(180deg)}
+.panel{display:grid;grid-template-rows:0fr;transition:grid-template-rows .35s ease}
+.panel.open{grid-template-rows:1fr}
+.panel-in{overflow:hidden;min-height:0}
+.log{list-style:none;margin:8px 0 0;padding:0;max-height:210px;overflow:auto;display:grid;gap:6px}
+.log li{display:flex;justify-content:space-between;align-items:center;background:var(--panel);padding:10px 12px;opacity:0}
+.open .log li{animation:row .4s ease forwards;animation-delay:var(--d)}
+@keyframes row{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:none}}
+.log b{display:block;font-weight:600}
+.amt{color:var(--gain);font-weight:800;white-space:nowrap}
+.open .amt{animation:credit .7s cubic-bezier(.2,1.4,.4,1) both;animation-delay:calc(var(--d) + 150ms)}
+@keyframes credit{0%{transform:scale(.4);opacity:0}60%{transform:scale(1.3);text-shadow:0 0 14px #22c55e}100%{transform:scale(1);opacity:1;text-shadow:none}}
+.new{font:9px ui-monospace,Consolas,monospace;background:var(--lilac);color:var(--ink);padding:1px 5px;margin-left:6px;vertical-align:middle}
+@media (prefers-reduced-motion:reduce){.log li{opacity:1!important}}
 </style>
 </head>
 <body>
@@ -87,6 +103,11 @@ button:focus-visible{outline:2px solid var(--gain);outline-offset:2px}
     <div class="card cut"><div class="mono">Ads today</div><div class="big" id="today">0</div></div>
     <div class="card cut"><div class="mono">Ads total</div><div class="big p" id="total">0</div></div>
   </div>
+    <button class="acc cut" id="accBtn" aria-expanded="false" aria-controls="accPanel"><span>Earnings activity</span><span class="chev">▾</span></button>
+  <div class="panel" id="accPanel"><div class="panel-in">
+    <ul id="log" class="log"></ul>
+    <p id="empty" class="note">No ads yet. Send a message on ChatGPT, Claude or Gemini.</p>
+  </div></div>
 </section>
 
 <section id="cash">

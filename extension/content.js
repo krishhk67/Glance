@@ -37,7 +37,7 @@
     chrome.storage.local.get({ enabled: true }, ({ enabled }) => {
       if (!enabled) return;
       lastAdAt = Date.now();
-      showAd(GLANCE_ADS[Math.floor(Math.random() * GLANCE_ADS.length)]);
+      getAd().then((ad) => ad && showAd(ad));
     });
   }
 
@@ -66,7 +66,7 @@
       clearTimeout(viewTimer);
       if (e.isIntersecting && e.intersectionRatio >= 0.5 && !counted) {
         viewTimer = setTimeout(() => {
-          if (document.visibilityState === "visible") { counted = true; countImpression(); }
+          if (document.visibilityState === "visible") { counted = true; countImpression(ad); }
         }, REWARD_VIEW_MS);
       }
     }, { threshold: [0.5] });
@@ -74,11 +74,14 @@
     setTimeout(remove, AD_LIFETIME_MS);
   }
 
-  function countImpression() {
-    const day = new Date().toISOString().slice(0, 10);
-    chrome.storage.local.get({ total: 0, day, today: 0 }, (s) => {
+    function countImpression(ad) {
+    const now = Date.now();
+    const day = new Date(now).toISOString().slice(0, 10);
+    chrome.storage.local.get({ total: 0, day, today: 0, history: [] }, (s) => {
       const today = s.day === day ? s.today + 1 : 1;
-      chrome.storage.local.set({ total: s.total + 1, day, today });
+      const entry = { ad: ad.title, ts: now, paise: Math.round(USER_PAYOUT_RUPEES * 100) };
+      const history = [entry, ...s.history].slice(0, 50);
+      chrome.storage.local.set({ total: s.total + 1, day, today, history });
     });
   }
 

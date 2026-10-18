@@ -1,4 +1,4 @@
-const RATE = 0.8 * 0.7; // illustrative: ₹ per ad shown x 70% share
+const RATE = 0.8 * 0.7; // test mode: ₹ per ad shown x 70% share (live mode: the server decides)
 const MIN_PAYOUT = 100;
 const $ = (id) => document.getElementById(id);
 const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -15,7 +15,35 @@ function countUp(el, to, fmt) {
   requestAnimationFrame(step);
 }
 
-chrome.storage.local.get({ enabled: true, day, today: 0, total: 0 }, (s) => {
+function renderLog(history) {
+  const ul = $("log");
+  ul.textContent = "";
+  $("empty").style.display = history.length ? "none" : "block";
+  history.forEach((h, i) => {
+    const li = document.createElement("li");
+    li.style.setProperty("--d", Math.min(i, 8) * 70 + "ms");
+    const left = document.createElement("div");
+    const name = document.createElement("b");
+    name.textContent = h.ad;
+    if (Date.now() - h.ts < 5 * 60 * 1000) {
+      const tag = document.createElement("span");
+      tag.className = "new";
+      tag.textContent = "NEW";
+      name.appendChild(tag);
+    }
+    const when = document.createElement("span");
+    when.className = "mono";
+    when.textContent = new Date(h.ts).toLocaleString("en-IN", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" });
+    left.append(name, when);
+    const amt = document.createElement("span");
+    amt.className = "amt";
+    amt.textContent = "+₹" + (h.paise / 100).toFixed(2);
+    li.append(left, amt);
+    ul.appendChild(li);
+  });
+}
+
+chrome.storage.local.get({ enabled: true, day, today: 0, total: 0, history: [] }, (s) => {
   const today = s.day === day ? s.today : 0;
   const balance = s.total * RATE;
   const pct = Math.min(100, (balance / MIN_PAYOUT) * 100);
@@ -25,9 +53,16 @@ chrome.storage.local.get({ enabled: true, day, today: 0, total: 0 }, (s) => {
   countUp($("sim"), balance, (n) => "₹" + n.toFixed(2));
   countUp($("pct"), pct, (n) => Math.round(n) + "%");
   setTimeout(() => { $("bar").style.width = pct + "%"; }, 50);
+  renderLog(s.history);
 
   $("on").checked = s.enabled;
   $("on").addEventListener("change", () => chrome.storage.local.set({ enabled: $("on").checked }));
+});
+
+// Slide-down earnings activity
+$("accBtn").addEventListener("click", () => {
+  const open = $("accPanel").classList.toggle("open");
+  $("accBtn").setAttribute("aria-expanded", open);
 });
 
 // Tabs
