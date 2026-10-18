@@ -3,6 +3,18 @@ const MIN_PAYOUT = 100;
 const $ = (id) => document.getElementById(id);
 const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
 const day = new Date().toISOString().slice(0, 10);
+function applyTheme(t) {
+  document.documentElement.dataset.theme = t;
+  const b = $("theme");
+  b.textContent = t === "light" ? "☾" : "☀";
+  b.setAttribute("aria-label", t === "light" ? "Switch to dark theme" : "Switch to light theme");
+}
+chrome.storage.local.get({ theme: "dark" }, ({ theme }) => applyTheme(theme));
+$("theme").addEventListener("click", () => {
+  const next = document.documentElement.dataset.theme === "light" ? "dark" : "light";
+  applyTheme(next);
+  chrome.storage.local.set({ theme: next });
+});
 
 function countUp(el, to, fmt) {
   if (reduce || to === 0) { el.textContent = fmt(to); return; }
