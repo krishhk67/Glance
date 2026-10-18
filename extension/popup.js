@@ -107,4 +107,45 @@ $("coin").addEventListener("click", (e) => {
       { duration: 600, easing: "ease-out" }
     ).onfinish = () => d.remove();
   }
+  const SUPABASE_URL = "https://ofybiuthkpfnbcadhdjp.supabase.co";
+const SUPABASE_KEY = "sb_publishable_WO0YoJ6Od4-ZkKJHxz_eZQ_pU9lnGNj"; // public key, safe in the extension
+
+function showAccount(session) {
+  $("authOut").style.display = session ? "none" : "block";
+  $("authIn").style.display = session ? "block" : "none";
+  if (session) $("who").textContent = session.email;
+}
+chrome.storage.local.get({ session: null }, ({ session }) => showAccount(session));
+
+async function doSignIn() {
+  const msg = $("authMsg");
+  msg.textContent = "Signing in…";
+  try {
+    const res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", apikey: SUPABASE_KEY },
+      body: JSON.stringify({ email: $("email").value.trim(), password: $("pw").value }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.msg || data.error_description || "Sign in failed");
+    const session = { access_token: data.access_token, refresh_token: data.refresh_token, expires_at: data.expires_at, email: data.user.email };
+    await chrome.storage.local.set({ session });
+    $("pw").value = "";
+    msg.textContent = "";
+    showAccount(session);
+  } catch (e) {
+    msg.textContent = e.message;
+  }
+}
+$("signin").addEventListener("click", doSignIn);
+$("pw").addEventListener("keydown", (e) => { if (e.key === "Enter") doSignIn(); });
+
+$("signout").addEventListener("click", async () => {
+  const { session } = await chrome.storage.local.get({ session: null });
+  if (session) {
+    fetch(`${SUPABASE_URL}/auth/v1/logout`, { method: "POST", headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${session.access_token}` } }).catch(() => {});
+  }
+  await chrome.storage.local.remove("session");
+  showAccount(null);
+});
 });

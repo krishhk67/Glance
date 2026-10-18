@@ -82,6 +82,8 @@ body{transition:background .25s,color .25s}
 .right{display:flex;align-items:center;gap:8px}
 .theme{width:30px;height:30px;background:var(--panel);color:var(--paper);border:0;font-size:16px;line-height:1;cursor:pointer;transition:transform .2s}
 .theme:hover{transform:rotate(20deg) scale(1.08)}
+.field{display:block;width:100%;margin-top:8px;background:var(--ink);color:var(--paper);border:1px solid var(--line);padding:10px;font:14px "Jost",system-ui,sans-serif}
+.field:focus-visible{outline:2px solid var(--gain);outline-offset:1px}
 </style>
 </head>
 <body>
@@ -137,6 +139,20 @@ body{transition:background .25s,color .25s}
 </section>
 
 <section id="about">
+      <div class="card cut" id="account" style="margin-bottom:8px">
+    <div class="mono">Account</div>
+    <div id="authOut">
+      <input class="field" id="email" type="email" placeholder="Email" autocomplete="username">
+      <input class="field" id="pw" type="password" placeholder="Password" autocomplete="current-password">
+      <button class="req cut" id="signin">Sign in</button>
+      <p class="note" id="authMsg" role="status"></p>
+      <p class="note">No account yet? <a href="https://glancepay.vercel.app" target="_blank" rel="noopener">Sign up on the website</a></p>
+    </div>
+    <div id="authIn" style="display:none">
+      <div class="big" style="font-size:16px;word-break:break-all" id="who"></div>
+      <button class="req cut" id="signout">Sign out</button>
+    </div>
+  </div>
   <div class="card cut">
     <div class="row">
       <div><div style="font-weight:700">Show ads after AI replies</div><div class="mono" style="margin-top:2px">ChatGPT · Claude · Gemini</div></div>
