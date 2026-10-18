@@ -9,14 +9,18 @@
 @font-face{font-family:"Jost";src:url("fonts/jost-latin-700-normal.woff2") format("woff2");font-weight:700}
 @font-face{font-family:"Jost";src:url("fonts/jost-latin-800-normal.woff2") format("woff2");font-weight:800}
 :root{--ink:#121212;--panel:#1b1b1b;--line:#2b2b2b;--paper:#efede8;--gain:#22c55e;--lilac:#c084fc;--amber:#f59e0b;--mute:#8a8a8a}
+html{color-scheme:dark}
+html[data-theme=light]{color-scheme:light;--ink:#f4f2ed;--panel:#ffffff;--line:#dcd8cf;--paper:#121212;--mute:#6b6b6b;--gain:#16a34a;--lilac:#9333ea;--amber:#b45309}
+html[data-theme=light] .chip2:hover:not(:disabled){background:#f0ede6}
 *{box-sizing:border-box}
-body{margin:0;width:340px;background:var(--ink);color:var(--paper);font:15px "Jost",system-ui,sans-serif}
+body{margin:0;width:340px;background:var(--ink);color:var(--paper);font:15px "Jost",system-ui,-apple-system,"Segoe UI",sans-serif;transition:background .25s,color .25s}
 .mono{font:11px ui-monospace,Consolas,monospace;letter-spacing:.08em;color:var(--mute);text-transform:uppercase}
 .cut{clip-path:polygon(0 0,calc(100% - 10px) 0,100% 10px,100% 100%,10px 100%,0 calc(100% - 10px))}
 header{display:flex;justify-content:space-between;align-items:center;padding:14px 16px 10px;border-bottom:1px dashed var(--line)}
 .logo{font-size:24px;font-weight:800;letter-spacing:-.03em}
-.chip{display:flex;align-items:center;gap:6px;background:var(--panel);padding:4px 9px}
-.dot{width:7px;height:7px;border-radius:50%;background:var(--amber)}
+.right{display:flex;align-items:center;gap:8px}
+.theme{width:30px;height:30px;background:var(--panel);color:var(--paper);border:0;font-size:16px;line-height:1;cursor:pointer;transition:transform .2s}
+.theme:hover{transform:rotate(20deg) scale(1.08)}
 nav{display:flex;gap:6px;padding:10px 16px 0}
 nav button{flex:1;background:var(--panel);color:var(--mute);border:0;padding:8px 0;font:600 11px ui-monospace,Consolas,monospace;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;transition:transform .15s,background .15s}
 nav button:hover{transform:translateY(-2px);color:var(--paper)}
@@ -37,6 +41,7 @@ section.on{display:block;animation:in .25s ease}
 @keyframes float{0%,100%{transform:translateY(0) rotate(-4deg)}50%{transform:translateY(-6px) rotate(6deg)}}
 .spark1{right:70px;top:8px;width:20px;height:20px;animation:float 4s ease-in-out infinite}
 .zap{right:14px;bottom:10px;width:24px;height:24px;animation:float 3s ease-in-out infinite reverse}
+.money{right:14px;bottom:8px;width:46px;height:46px;animation:float 3.2s ease-in-out infinite reverse}
 .bar{height:8px;background:var(--line);margin-top:10px}
 .bar i{display:block;height:100%;width:0;background:var(--gain);transition:width .9s cubic-bezier(.2,.8,.2,1)}
 .chips{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
@@ -45,8 +50,8 @@ section.on{display:block;animation:in .25s ease}
 .chip2[aria-pressed=true]{background:var(--gain);color:var(--ink);border-color:var(--gain)}
 .chip2:disabled{opacity:.45;cursor:not-allowed}
 .chip2 small{display:block;font:10px ui-monospace,Consolas,monospace;letter-spacing:.06em;opacity:.8;margin-top:2px}
-.req{width:100%;margin-top:10px;background:var(--paper);color:var(--ink);border:0;padding:12px;font:700 12px ui-monospace,Consolas,monospace;letter-spacing:.1em;text-transform:uppercase}
-.req:disabled{opacity:.5}
+.req{width:100%;margin-top:10px;background:var(--paper);color:var(--ink);border:0;padding:12px;font:700 12px ui-monospace,Consolas,monospace;letter-spacing:.1em;text-transform:uppercase;cursor:pointer}
+.req:disabled{opacity:.5;cursor:not-allowed}
 .row{display:flex;justify-content:space-between;align-items:center;gap:10px}
 .switch{position:relative;width:44px;height:24px;flex:none}
 .switch input{opacity:0;position:absolute;inset:0;cursor:pointer;margin:0;z-index:1}
@@ -58,7 +63,8 @@ section.on{display:block;animation:in .25s ease}
 a{color:var(--lilac)}
 .note{margin:10px 0 0;color:var(--mute);line-height:1.5;font-size:12px}
 button:focus-visible{outline:2px solid var(--gain);outline-offset:2px}
-@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+.field{display:block;width:100%;margin-top:8px;background:var(--ink);color:var(--paper);border:1px solid var(--line);padding:10px;font:14px "Jost",system-ui,sans-serif}
+.field:focus-visible{outline:2px solid var(--gain);outline-offset:1px}
 .acc{width:100%;margin-top:8px;display:flex;justify-content:space-between;align-items:center;background:var(--panel);color:var(--paper);border:0;padding:12px;font:700 14px "Jost",system-ui,sans-serif;cursor:pointer}
 .chev{transition:transform .3s;color:var(--gain)}
 .acc[aria-expanded=true] .chev{transform:rotate(180deg)}
@@ -71,26 +77,17 @@ button:focus-visible{outline:2px solid var(--gain);outline-offset:2px}
 @keyframes row{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:none}}
 .log b{display:block;font-weight:600}
 .amt{color:var(--gain);font-weight:800;white-space:nowrap}
+.amt.dim{color:var(--mute);font-weight:600}
 .open .amt{animation:credit .7s cubic-bezier(.2,1.4,.4,1) both;animation-delay:calc(var(--d) + 150ms)}
 @keyframes credit{0%{transform:scale(.4);opacity:0}60%{transform:scale(1.3);text-shadow:0 0 14px #22c55e}100%{transform:scale(1);opacity:1;text-shadow:none}}
 .new{font:9px ui-monospace,Consolas,monospace;background:var(--lilac);color:var(--ink);padding:1px 5px;margin-left:6px;vertical-align:middle}
-@media (prefers-reduced-motion:reduce){.log li{opacity:1!important}}
-html{color-scheme:dark}
-html[data-theme=light]{color-scheme:light;--ink:#f4f2ed;--panel:#ffffff;--line:#dcd8cf;--paper:#121212;--mute:#6b6b6b;--gain:#16a34a;--lilac:#9333ea;--amber:#b45309}
-html[data-theme=light] .chip2:hover:not(:disabled){background:#f0ede6}
-body{transition:background .25s,color .25s}
-.right{display:flex;align-items:center;gap:8px}
-.theme{width:30px;height:30px;background:var(--panel);color:var(--paper);border:0;font-size:16px;line-height:1;cursor:pointer;transition:transform .2s}
-.theme:hover{transform:rotate(20deg) scale(1.08)}
-.field{display:block;width:100%;margin-top:8px;background:var(--ink);color:var(--paper);border:1px solid var(--line);padding:10px;font:14px "Jost",system-ui,sans-serif}
-.field:focus-visible{outline:2px solid var(--gain);outline-offset:1px}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}.log li{opacity:1!important}}
 </style>
 </head>
 <body>
 <header>
   <span class="logo">glance</span>
   <div class="right">
-    <span class="chip mono"><span class="dot"></span>Test build</span>
     <button class="theme cut" id="theme" aria-label="Switch to light theme">☀</button>
   </div>
 </header>
@@ -104,21 +101,22 @@ body{transition:background .25s,color .25s}
 <section id="earn" class="on">
   <div class="grid">
     <div class="card cut hero wide" style="min-height:110px">
-      <div class="mono">Simulated balance</div>
+      <div class="mono">Balance</div>
       <div class="big g" id="sim">₹0.00</div>
       <div class="mono" style="margin-top:6px">Tap the coin</div>
       <button class="coin" id="coin" aria-label="Tap the coin for a little celebration">
         <svg viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="28" fill="#fbbf24" stroke="#121212" stroke-width="3"/><circle cx="32" cy="32" r="20" fill="#fde68a" stroke="#121212" stroke-width="2"/><circle cx="25" cy="28" r="3" fill="#121212"/><circle cx="39" cy="28" r="3" fill="#121212"/><path d="M23 37q9 9 18 0" fill="none" stroke="#121212" stroke-width="3" stroke-linecap="round"/></svg>
       </button>
+      <span class="sticker money" aria-hidden="true"><svg viewBox="0 0 64 64"><path d="M14 30C6 26 2 20 4 12c6 2 10 6 12 12z" fill="#efede8" stroke="#121212" stroke-width="3" stroke-linejoin="round"/><path d="M50 30c8-4 12-10 10-18-6 2-10 6-12 12z" fill="#efede8" stroke="#121212" stroke-width="3" stroke-linejoin="round"/><rect x="12" y="22" width="40" height="24" rx="3" fill="#22c55e" stroke="#121212" stroke-width="3"/><circle cx="32" cy="34" r="8" fill="#bbf7d0" stroke="#121212" stroke-width="2"/><path d="M28.5 30h7M28.5 33h7M28.5 30h2.5a3 3 0 0 1 0 6h-2.5l4.5 4" fill="none" stroke="#121212" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="17" cy="27" r="1.6" fill="#121212"/><circle cx="47" cy="41" r="1.6" fill="#121212"/></svg></span>
       <span class="sticker spark1"><svg viewBox="0 0 64 64" aria-hidden="true"><path d="M32 4l7 21 21 7-21 7-7 21-7-21-21-7 21-7z" fill="#c084fc" stroke="#121212" stroke-width="3" stroke-linejoin="round"/></svg></span>
     </div>
     <div class="card cut"><div class="mono">Ads today</div><div class="big" id="today">0</div></div>
     <div class="card cut"><div class="mono">Ads total</div><div class="big p" id="total">0</div></div>
   </div>
-    <button class="acc cut" id="accBtn" aria-expanded="false" aria-controls="accPanel"><span>Earnings activity</span><span class="chev">▾</span></button>
+  <button class="acc cut" id="accBtn" aria-expanded="false" aria-controls="accPanel"><span>Earnings activity</span><span class="chev">▾</span></button>
   <div class="panel" id="accPanel"><div class="panel-in">
     <ul id="log" class="log"></ul>
-    <p id="empty" class="note">No ads yet. Send a message on ChatGPT, Claude or Gemini.</p>
+    <p id="empty" class="note">Sign in, then use ChatGPT, Claude or Gemini. Your ad views show up here.</p>
   </div></div>
 </section>
 
@@ -135,11 +133,11 @@ body{transition:background .25s,color .25s}
     <button class="chip2 cut" data-m="PayPal" aria-pressed="false">PayPal<small>MIN ₹500</small></button>
     <button class="chip2 cut" disabled>UPI<small>COMING SOON</small></button>
   </div>
-  <button class="req cut" id="req" disabled>Test mode · no real payouts</button>
+  <button class="req cut" id="req" disabled>Payouts open at ₹100</button>
 </section>
 
 <section id="about">
-      <div class="card cut" id="account" style="margin-bottom:8px">
+  <div class="card cut" id="account" style="margin-bottom:8px">
     <div class="mono">Account</div>
     <div id="authOut">
       <button class="req cut" id="oauthGoogle" style="margin-top:8px">Continue with Google</button>
@@ -162,8 +160,8 @@ body{transition:background .25s,color .25s}
       <label class="switch"><input type="checkbox" id="on" aria-label="Show ads after AI replies"><span></span></label>
     </div>
   </div>
-  <p class="note">No real money is earned in this test build. Chat text is never read or stored. Ads are always labelled.</p>
-  <p class="note"><a href="https://glance-jade.vercel.app" target="_blank" rel="noopener">Open Glance website</a></p>
+  <p class="note">Chat text is never read or stored. Ads are always labelled.</p>
+  <p class="note"><a href="https://glancepay.vercel.app" target="_blank" rel="noopener">Open Glance website</a></p>
 </section>
 
 <script src="popup.js"></script>

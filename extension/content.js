@@ -33,9 +33,10 @@
   }
 
   function maybeShowAd() {
+    if (!chrome.runtime || !chrome.runtime.id) return; // extension was reloaded; stop quietly
     if (Date.now() - lastAdAt < MIN_GAP_MS || document.visibilityState !== "visible") return;
-    chrome.storage.local.get({ enabled: true }, ({ enabled }) => {
-      if (!enabled) return;
+    chrome.storage.local.get({ enabled: true, session: null }, ({ enabled, session }) => {
+      if (!enabled || !session) return; // ads only for signed-in users, so every view belongs to an account
       lastAdAt = Date.now();
       getAd().then((ad) => ad && showAd(ad));
     });
@@ -51,7 +52,7 @@
       .t{font-weight:700;margin:6px 0 4px}.b{color:#b5b5b5;line-height:1.4}
       a{display:inline-block;margin-top:10px;background:#efede8;color:#121212;padding:6px 12px;text-decoration:none;font-weight:600}
       button{position:absolute;top:6px;right:8px;background:none;border:0;color:#8a8a8a;font-size:18px;cursor:pointer}
-    </style><div class="c"><button aria-label="Close ad">×</button><div class="l">AD · GLANCE TEST</div>
+    </style><div class="c"><button aria-label="Close ad">×</button><div class="l">AD · GLANCE</div>
     <div class="t"></div><div class="b"></div><a target="_blank" rel="noopener noreferrer"></a></div>`;
     const card = root.querySelector(".c");
     root.querySelector(".t").textContent = ad.title;
@@ -74,14 +75,22 @@
     setTimeout(remove, AD_LIFETIME_MS);
   }
 
-    function countImpression(ad) {
-    const now = Date.now();
-    const day = new Date(now).toISOString().slice(0, 10);
-    chrome.storage.local.get({ total: 0, day, today: 0, history: [] }, (s) => {
-      const today = s.day === day ? s.today + 1 : 1;
-      const entry = { ad: ad.title, ts: now, paise: Math.round(USER_PAYOUT_RUPEES * 100) };
-      const history = [entry, ...s.history].slice(0, 50);
-      chrome.storage.local.set({ total: s.total + 1, day, today, history });
+  function countImpression(ad) {
+    chrome.storage.local.get({ session: null, stats: {} }, ({ session, stats }) => {
+      if (!session || !session.email) return;
+      const key = session.email.toLowerCase();
+      const now = Date.now();
+      const day = new Date(now).toISOString().slice(0, 10);
+      const cur = stats[key] || { total: 0, day, today: 0, history: [], paise: 0 };
+      const paise = ad.paid ? Math.round(USER_PAYOUT_RUPEES * 100) : 0;
+      stats[key] = {
+        total: cur.total + 1,
+        day,
+        today: cur.day === day ? cur.today + 1 : 1,
+        paise: (cur.paise || 0) + paise,
+        history: [{ ad: ad.title, ts: now, paise }, ...(cur.history || [])].slice(0, 50),
+      };
+      chrome.storage.local.set({ stats });
     });
   }
 

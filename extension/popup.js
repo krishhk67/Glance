@@ -1,4 +1,3 @@
-const RATE = 0.8 * 0.7; // test mode: ₹ per ad shown x 70% share (live mode: the server decides)
 const MIN_PAYOUT = 100;
 const SUPABASE_URL = "https://ofybiuthkpfnbcadhdjp.supabase.co";
 const SUPABASE_KEY = "sb_publishable_WO0YoJ6Od4-ZkKJHxz_eZQ_pU9lnGNj"; // public key, safe in the extension
@@ -61,29 +60,33 @@ function renderLog(history) {
     when.textContent = new Date(h.ts).toLocaleString("en-IN", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" });
     left.append(name, when);
     const amt = document.createElement("span");
-    amt.className = "amt";
-    amt.textContent = "+₹" + (h.paise / 100).toFixed(2);
+    amt.className = h.paise > 0 ? "amt" : "amt dim";
+    amt.textContent = h.paise > 0 ? "+₹" + (h.paise / 100).toFixed(2) : "Viewed";
     li.append(left, amt);
     ul.appendChild(li);
   });
 }
 
-chrome.storage.local.get({ enabled: true, day, today: 0, total: 0, history: [] }, (s) => {
-  const today = s.day === day ? s.today : 0;
-  const balance = s.total * RATE;
-  const pct = Math.min(100, (balance / MIN_PAYOUT) * 100);
-  countUp("today", today, (n) => Math.round(n));
-  countUp("total", s.total, (n) => Math.round(n));
-  countUp("sim", balance, (n) => "₹" + n.toFixed(2));
-  countUp("pct", pct, (n) => Math.round(n) + "%");
-  setTimeout(() => { const bar = $("bar"); if (bar) bar.style.width = pct + "%"; }, 50);
-  renderLog(s.history);
-  const box = $("on");
-  if (box) {
-    box.checked = s.enabled;
-    box.addEventListener("change", () => chrome.storage.local.set({ enabled: box.checked }));
-  }
-});
+function renderStats() {
+  chrome.storage.local.get({ enabled: true, session: null, stats: {} }, (s) => {
+    const key = s.session && s.session.email ? s.session.email.toLowerCase() : null;
+    const cur = (key && s.stats[key]) || { total: 0, today: 0, day, history: [], paise: 0 };
+    const today = cur.day === day ? cur.today : 0;
+    const balance = (cur.paise || 0) / 100;
+    const pct = Math.min(100, (balance / MIN_PAYOUT) * 100);
+    countUp("today", today, (n) => Math.round(n));
+    countUp("total", cur.total, (n) => Math.round(n));
+    countUp("sim", balance, (n) => "₹" + n.toFixed(2));
+    countUp("pct", pct, (n) => Math.round(n) + "%");
+    setTimeout(() => { const bar = $("bar"); if (bar) bar.style.width = pct + "%"; }, 50);
+    renderLog(cur.history || []);
+    const box = $("on");
+    if (box) box.checked = s.enabled;
+  });
+}
+renderStats();
+on("on", "change", () => chrome.storage.local.set({ enabled: $("on").checked }));
+chrome.storage.onChanged.addListener((c) => { if (c.session || c.stats) renderStats(); });
 
 on("accBtn", "click", () => {
   const panel = $("accPanel");

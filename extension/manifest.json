@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Glance (test build)",
-  "version": "0.1.3",
-  "description": "Shows a small, clearly labelled ad after AI replies. Test build with house ads only.",
+  "name": "Glance",
+  "version": "0.2.0",
+  "description": "Earn from clearly labelled ads shown after AI replies on ChatGPT, Claude and Gemini.",
   "permissions": ["storage", "identity"],
   "icons": { "16": "icons/icon16.png", "48": "icons/icon48.png", "128": "icons/icon128.png" },
   "background": { "service_worker": "background.js" },

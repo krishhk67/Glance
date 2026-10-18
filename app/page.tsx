@@ -4,11 +4,11 @@ import type { User } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
 import { Coin, Sparkle, GiftCard, Zap } from "@/components/Stickers";
 
-const SAMPLE = ["Sample: a user just earned ₹4.20 from 12 replies", "Sample: a ₹250 Amazon voucher was requested", "Sample: a user just earned ₹1.60 from 5 replies", "Sample: a ₹500 PayPal payout was requested"];
-
-const BRAND = "Glance"; // placeholder name, change anywhere here
-const AD_VALUE = 0.8; // illustrative ₹ an advertiser pays per ad shown
-const OUR_SHARE = 70; // illustrative % of ad money paid to users
+const BRAND = "Glance";
+const CHROME_STORE_URL = ""; // paste your Chrome Web Store link here once published
+const AD_VALUE = 0.8; // estimate: ₹ an advertiser pays per ad shown
+const OUR_SHARE = 70; // % of ad money paid to users
+const MIN_PAYOUT = 100;
 
 const PAYOUTS = [
   { id: "amazon", name: "Amazon gift card", note: "Min ₹100", soon: false },
@@ -17,8 +17,9 @@ const PAYOUTS = [
   { id: "upi", name: "UPI", note: "Coming soon", soon: true },
 ];
 const FAQ = [
-  ["How do I earn?", "Install the extension, chat with your AI as usual. A small ad appears after replies and you earn for each one shown."],
-  ["When can I cash out?", "Once you pass the minimum for your chosen method. Vouchers arrive by email, PayPal to your account."],
+  ["How do I earn?", "Install the extension and sign in. Use ChatGPT, Claude or Gemini as usual. A small, clearly labelled ad appears after replies, and paid ads earn you money."],
+  ["When do ads start paying?", "Paid ads roll out with our first advertisers. Members who sign up now are first in line."],
+  ["When can I cash out?", "Once your balance passes the minimum for your chosen method. Vouchers arrive by email, PayPal goes to your account."],
   ["Why no UPI yet?", "UPI payouts need a payments partner. It is next on the list, and you can join the waitlist below."],
 ];
 const inr = (n: number) => "₹" + n.toLocaleString("en-IN", { maximumFractionDigits: 2 });
@@ -28,7 +29,6 @@ function Box({ children, className = "" }: { children: React.ReactNode; classNam
 }
 
 export default function Home() {
-  const [bal, setBal] = useState(0);
   const [replies, setReplies] = useState(60);
   const [theirShare, setTheirShare] = useState(20);
   const [pick, setPick] = useState("amazon");
@@ -36,18 +36,23 @@ export default function Home() {
   const [email, setEmail] = useState("");
   const [joined, setJoined] = useState(false);
   const [user, setUser] = useState<User | null>(null);
+  const [balance, setBalance] = useState(0);
   const [authOpen, setAuthOpen] = useState(false);
   const [signUp, setSignUp] = useState(true);
   const [pw, setPw] = useState("");
   const [msg, setMsg] = useState("");
-  const [toast, setToast] = useState(0);
-  useEffect(() => { const t = setInterval(() => setToast((i) => (i + 1) % SAMPLE.length), 4500); return () => clearInterval(t); }, []);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => setUser(data.user));
     const { data } = supabase.auth.onAuthStateChange((_e, session) => setUser(session?.user ?? null));
     return () => data.subscription.unsubscribe();
   }, []);
+
+  useEffect(() => {
+    if (!user) { setBalance(0); return; }
+    supabase.from("user_balance").select("balance_paise").maybeSingle()
+      .then(({ data }) => setBalance((data?.balance_paise ?? 0) / 100));
+  }, [user]);
 
   async function submitAuth() {
     setMsg("");
@@ -57,21 +62,17 @@ export default function Home() {
     setMsg(signUp ? "Check your email to confirm, then sign in." : "");
     if (!signUp) setAuthOpen(false);
   }
+
   async function oauth(provider: "google" | "github") {
     const { error } = await supabase.auth.signInWithOAuth({ provider, options: { redirectTo: window.location.origin } });
     if (error) setMsg(error.message);
   }
+
   async function joinWaitlist() {
     if (!email.includes("@")) return;
     const { error } = await supabase.from("upi_waitlist").insert({ email });
     if (!error || error.code === "23505") setJoined(true);
   }
-
-  useEffect(() => {
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    const t = setInterval(() => setBal((b) => +(b + 0.05 + Math.random() * 0.3).toFixed(2)), 1400);
-    return () => clearInterval(t);
-  }, []);
 
   const monthly = (share: number) => replies * 30 * AD_VALUE * (share / 100);
   const ours = monthly(OUR_SHARE), theirs = monthly(theirShare);
@@ -86,7 +87,7 @@ export default function Home() {
             <button className="cut bg-paper px-4 py-2 font-semibold text-ink" onClick={() => supabase.auth.signOut()}>Sign out</button>
           </div>
         ) : (
-          <button className="cut bg-paper px-4 py-2 text-sm font-semibold text-ink" onClick={() => setAuthOpen(true)}>Sign in</button>
+          <button className="cut bg-paper px-4 py-2 text-sm font-semibold text-ink" onClick={() => { setSignUp(false); setAuthOpen(true); }}>Sign in</button>
         )}
       </header>
 
@@ -95,8 +96,9 @@ export default function Home() {
           <p className="lbl">Revenue from your AI chats</p>
           <h1 className="mt-3 text-5xl font-bold leading-tight">Every AI reply earns you money.</h1>
           <p className="mt-4 max-w-md text-lg text-neutral-400">Install the extension, keep chatting. You keep {OUR_SHARE}% of what advertisers pay, and cash out without a wallet maze.</p>
-          <div className="mt-6 flex gap-3">
-            <a href="#earn" className="cut bg-paper px-5 py-3 font-semibold text-ink">Add to Chrome</a>
+          <div className="mt-6 flex flex-wrap gap-3">
+            {CHROME_STORE_URL && <a href={CHROME_STORE_URL} className="cut bg-paper px-5 py-3 font-semibold text-ink">Add to Chrome</a>}
+            {!user && <button onClick={() => { setSignUp(true); setAuthOpen(true); }} className={`cut px-5 py-3 font-semibold ${CHROME_STORE_URL ? "border border-line" : "bg-paper text-ink"}`}>Get early access</button>}
             <a href="#calc" className="cut border border-line px-5 py-3">Calculate earnings</a>
           </div>
         </div>
@@ -104,14 +106,15 @@ export default function Home() {
           <Sparkle className="float absolute -left-6 -top-6 h-12 w-12" />
           <GiftCard className="float absolute -bottom-6 -right-4 z-10 h-16 w-16 [--r:8deg]" />
           <Zap className="float absolute -right-3 -top-7 z-10 h-12 w-12 [--r:-10deg]" />
-        <Box>
-          <p className="lbl">Live demo balance</p>
-          <p className="mt-2 text-5xl font-bold text-gain">{inr(bal)}</p>
-          <button onClick={() => setBal((b) => +(b + 1).toFixed(2))} className="pop mt-3 flex items-center gap-2 text-sm text-neutral-300" aria-label="Tap the coin to add ₹1 to the demo balance"><Coin className="float h-12 w-12" /> Tap the coin (+₹1 demo)</button>
-          <p className="mt-2 text-sm text-neutral-400">Ticks up as ads are shown. Demo only.</p>
-          <div className="mt-5 h-2 bg-line"><div className="h-2 bg-gain transition-all" style={{ width: `${Math.min(100, (bal / 100) * 100)}%` }} /></div>
-          <p className="lbl mt-2">Progress to ₹100 minimum</p>
-        </Box>
+          <Box>
+            <p className="lbl">Your balance</p>
+            <p className="mt-2 text-5xl font-bold text-gain">{inr(balance)}</p>
+            <p className="mt-2 text-sm text-neutral-400">
+              {user ? "Earnings from paid ads appear here." : "Sign in to see your balance."}
+            </p>
+            <div className="mt-5 h-2 bg-line"><div className="h-2 bg-gain transition-all" style={{ width: `${Math.min(100, (balance / MIN_PAYOUT) * 100)}%` }} /></div>
+            <p className="lbl mt-2">Progress to ₹{MIN_PAYOUT} minimum</p>
+          </Box>
         </div>
       </section>
 
@@ -130,7 +133,7 @@ export default function Home() {
       <section className="py-8">
         <p className="lbl">How it works</p>
         <div className="mt-4 grid gap-4 md:grid-cols-3">
-          {[[Zap, "1. Install", "Add the extension to Chrome in one click."], [Coin, "2. Chat", "Use your AI as usual. A small ad shows after replies."], [GiftCard, "3. Cash out", "Pick a voucher or PayPal when you pass the minimum."]].map(([Icon, t, d]: any) => (
+          {([[Zap, "1. Install", "Add the extension to Chrome and sign in."], [Coin, "2. Chat", "Use your AI as usual. A small ad shows after replies."], [GiftCard, "3. Cash out", "Pick a voucher or PayPal when you pass the minimum."]] as const).map(([Icon, t, d]) => (
             <Box key={t}><Icon className="h-14 w-14" /><h3 className="mt-3 text-xl font-semibold">{t}</h3><p className="mt-1 text-neutral-400">{d}</p></Box>
           ))}
         </div>
@@ -138,10 +141,10 @@ export default function Home() {
 
       <section id="calc" className="grid gap-6 py-8 md:grid-cols-2">
         <Box>
-          <p className="lbl">Earnings calculator</p>
+          <p className="lbl">Earnings estimate</p>
           <label className="mt-4 block text-sm" htmlFor="r">AI replies per day: <b>{replies}</b></label>
           <input id="r" type="range" min={10} max={200} value={replies} onChange={(e) => setReplies(+e.target.value)} className="w-full accent-green-500" />
-          <label className="mt-5 block text-sm" htmlFor="t">Other app's share to users: <b>{theirShare}%</b> (set to what they pay)</label>
+          <label className="mt-5 block text-sm" htmlFor="t">Other app's share to users: <b>{theirShare}%</b></label>
           <input id="t" type="range" min={5} max={60} value={theirShare} onChange={(e) => setTheirShare(+e.target.value)} className="w-full accent-purple-400" />
         </Box>
         <Box>
@@ -150,8 +153,8 @@ export default function Home() {
           <p className="text-sm text-neutral-400">with {BRAND} at {OUR_SHARE}%</p>
           <p className="mt-4 text-2xl font-semibold text-lilac">{inr(theirs)}</p>
           <p className="text-sm text-neutral-400">with the other app at {theirShare}%</p>
-          <p className="mt-4 font-semibold">You gain {inr(ours - theirs)} every month.</p>
-          <p className="lbl mt-3">Illustrative: assumes {inr(AD_VALUE)} paid per ad</p>
+          <p className="mt-4 font-semibold">That is {inr(ours - theirs)} more every month.</p>
+          <p className="lbl mt-3">Estimate only. Assumes {inr(AD_VALUE)} paid per ad shown; real earnings depend on advertisers.</p>
         </Box>
       </section>
 
@@ -187,7 +190,7 @@ export default function Home() {
           ))}
         </div>
       </section>
-      <div className="toast fixed bottom-4 left-4 z-10 max-w-xs bg-panel px-4 py-3 text-sm text-neutral-300 shadow-lg" role="status" key={toast}>{SAMPLE[toast]}</div>
+
       {authOpen && (
         <div className="fixed inset-0 z-10 grid place-items-center bg-black/70 p-5" onClick={() => setAuthOpen(false)}>
           <div className="cut w-full max-w-sm bg-panel p-6" role="dialog" aria-label="Sign in" onClick={(e) => e.stopPropagation()}>
@@ -201,7 +204,7 @@ export default function Home() {
               Continue with GitHub
             </button>
             <p className="lbl my-4 text-center">or use email</p>
-            <input value={email} onChange={(e) => setEmail(e.target.value)} type="email" placeholder="Email" className="mt-4 w-full border border-line bg-ink px-4 py-3" />
+            <input value={email} onChange={(e) => setEmail(e.target.value)} type="email" placeholder="Email" className="w-full border border-line bg-ink px-4 py-3" />
             <input value={pw} onChange={(e) => setPw(e.target.value)} type="password" placeholder="Password (min 6)" className="mt-3 w-full border border-line bg-ink px-4 py-3" />
             <button onClick={submitAuth} className="cut mt-4 w-full bg-gain px-5 py-3 font-semibold text-ink">{signUp ? "Sign up" : "Sign in"}</button>
             {msg && <p className="mt-3 text-sm text-amber" role="status">{msg}</p>}
