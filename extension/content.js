@@ -15,7 +15,9 @@
   const REWARD_VIEW_MS = 1000; // ad must be on screen this long to count
 
   const seen = new WeakSet();
-  let tracked = null, lastLen = 0, stable = 0, baseline = true, lastAdAt = 0;
+  let tracked = null, lastLen = 0, stable = 0, grew = false, lastAdAt = 0;
+  // Replies already on the page when it loads never trigger an ad.
+  setTimeout(() => document.querySelectorAll(selector).forEach((e) => seen.add(e)), 1500);
 
   function newestReply() {
     const all = document.querySelectorAll(selector);
@@ -26,10 +28,10 @@
     const el = newestReply();
     if (!el) return;
     const len = el.textContent ? el.textContent.length : 0;
-    if (baseline) { seen.add(el); tracked = el; lastLen = len; baseline = false; return; }
-    if (el !== tracked) { tracked = el; lastLen = len; stable = 0; return; }
-    if (len !== lastLen) { lastLen = len; stable = 0; return; }
-    if (len > 0 && ++stable >= SETTLE_POLLS && !seen.has(el)) { seen.add(el); maybeShowAd(); }
+    if (el !== tracked) { tracked = el; lastLen = len; stable = 0; grew = false; return; }
+    if (len !== lastLen) { lastLen = len; stable = 0; grew = true; return; }
+    if (seen.has(el)) return;
+    if (grew && len > 0 && ++stable >= SETTLE_POLLS) { seen.add(el); maybeShowAd(); }
   }
 
   function maybeShowAd() {
@@ -56,6 +58,7 @@
     <div class="t"></div><div class="b"></div><a target="_blank" rel="noopener noreferrer"></a></div>`;
     const card = root.querySelector(".c");
     root.querySelector(".t").textContent = ad.title;
+    root.querySelector(".l").textContent = ad.label || "AD · GLANCE";
     root.querySelector(".b").textContent = ad.body;
     const a = root.querySelector("a"); a.textContent = ad.cta; a.href = ad.url;
     const remove = () => { io.disconnect(); clearTimeout(viewTimer); host.remove(); };
