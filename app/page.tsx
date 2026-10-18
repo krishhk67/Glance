@@ -57,7 +57,10 @@ export default function Home() {
     setMsg(signUp ? "Check your email to confirm, then sign in." : "");
     if (!signUp) setAuthOpen(false);
   }
-
+  async function oauth(provider: "google" | "github") {
+    const { error } = await supabase.auth.signInWithOAuth({ provider, options: { redirectTo: window.location.origin } });
+    if (error) setMsg(error.message);
+  }
   async function joinWaitlist() {
     if (!email.includes("@")) return;
     const { error } = await supabase.from("upi_waitlist").insert({ email });
@@ -189,6 +192,15 @@ export default function Home() {
         <div className="fixed inset-0 z-10 grid place-items-center bg-black/70 p-5" onClick={() => setAuthOpen(false)}>
           <div className="cut w-full max-w-sm bg-panel p-6" role="dialog" aria-label="Sign in" onClick={(e) => e.stopPropagation()}>
             <p className="lbl">{signUp ? "Create account" : "Welcome back"}</p>
+            <button onClick={() => oauth("google")} className="cut mt-4 flex w-full items-center justify-center gap-3 bg-ink px-5 py-3 font-semibold hover:bg-line">
+              <svg viewBox="0 0 24 24" className="h-5 w-5 fill-current" aria-hidden="true"><path d="M12 10.2v3.9h5.5c-.2 1.4-1.7 4.1-5.5 4.1-3.3 0-6-2.7-6-6.1s2.7-6.1 6-6.1c1.9 0 3.1.8 3.8 1.5l2.6-2.5C16.8 3.4 14.6 2.4 12 2.4 6.7 2.4 2.4 6.7 2.4 12s4.3 9.6 9.6 9.6c5.5 0 9.2-3.9 9.2-9.4 0-.6-.1-1.1-.2-1.6H12z"/></svg>
+              Continue with Google
+            </button>
+            <button onClick={() => oauth("github")} className="cut mt-3 flex w-full items-center justify-center gap-3 bg-ink px-5 py-3 font-semibold hover:bg-line">
+              <svg viewBox="0 0 24 24" className="h-5 w-5 fill-current" aria-hidden="true"><path d="M12 .5C5.7.5.5 5.7.5 12c0 5.1 3.3 9.4 7.9 10.9.6.1.8-.3.8-.6v-2c-3.2.7-3.9-1.5-3.9-1.5-.5-1.3-1.3-1.7-1.3-1.7-1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1 1.8 2.8 1.3 3.5 1 .1-.8.4-1.3.8-1.6-2.6-.3-5.3-1.3-5.3-5.7 0-1.3.5-2.3 1.2-3.1-.1-.3-.5-1.5.1-3.1 0 0 1-.3 3.2 1.2a11 11 0 0 1 5.8 0c2.2-1.5 3.2-1.2 3.2-1.2.6 1.6.2 2.8.1 3.1.8.8 1.2 1.9 1.2 3.1 0 4.4-2.7 5.4-5.3 5.7.4.4.8 1.1.8 2.2v3.3c0 .3.2.7.8.6A11.5 11.5 0 0 0 23.5 12C23.5 5.7 18.3.5 12 .5z"/></svg>
+              Continue with GitHub
+            </button>
+            <p className="lbl my-4 text-center">or use email</p>
             <input value={email} onChange={(e) => setEmail(e.target.value)} type="email" placeholder="Email" className="mt-4 w-full border border-line bg-ink px-4 py-3" />
             <input value={pw} onChange={(e) => setPw(e.target.value)} type="password" placeholder="Password (min 6)" className="mt-3 w-full border border-line bg-ink px-4 py-3" />
             <button onClick={submitAuth} className="cut mt-4 w-full bg-gain px-5 py-3 font-semibold text-ink">{signUp ? "Sign up" : "Sign in"}</button>
