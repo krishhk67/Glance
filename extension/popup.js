@@ -1,22 +1,33 @@
 const RATE = 0.8 * 0.7; // test mode: ₹ per ad shown x 70% share (live mode: the server decides)
 const MIN_PAYOUT = 100;
+const SUPABASE_URL = "https://ofybiuthkpfnbcadhdjp.supabase.co";
+const SUPABASE_KEY = "sb_publishable_WO0YoJ6Od4-ZkKJHxz_eZQ_pU9lnGNj"; // public key, safe in the extension
+
 const $ = (id) => document.getElementById(id);
+const on = (id, ev, fn) => { const el = $(id); if (el) el.addEventListener(ev, fn); };
+const setText = (id, t) => { const el = $(id); if (el) el.textContent = t; };
 const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
 const day = new Date().toISOString().slice(0, 10);
+
+/* ---------- theme ---------- */
 function applyTheme(t) {
   document.documentElement.dataset.theme = t;
   const b = $("theme");
+  if (!b) return;
   b.textContent = t === "light" ? "☾" : "☀";
   b.setAttribute("aria-label", t === "light" ? "Switch to dark theme" : "Switch to light theme");
 }
 chrome.storage.local.get({ theme: "dark" }, ({ theme }) => applyTheme(theme));
-$("theme").addEventListener("click", () => {
+on("theme", "click", () => {
   const next = document.documentElement.dataset.theme === "light" ? "dark" : "light";
   applyTheme(next);
   chrome.storage.local.set({ theme: next });
 });
 
-function countUp(el, to, fmt) {
+/* ---------- stats + earnings log ---------- */
+function countUp(id, to, fmt) {
+  const el = $(id);
+  if (!el) return;
   if (reduce || to === 0) { el.textContent = fmt(to); return; }
   const t0 = performance.now();
   const step = (t) => {
@@ -29,8 +40,10 @@ function countUp(el, to, fmt) {
 
 function renderLog(history) {
   const ul = $("log");
+  if (!ul) return;
   ul.textContent = "";
-  $("empty").style.display = history.length ? "none" : "block";
+  const empty = $("empty");
+  if (empty) empty.style.display = history.length ? "none" : "block";
   history.forEach((h, i) => {
     const li = document.createElement("li");
     li.style.setProperty("--d", Math.min(i, 8) * 70 + "ms");
@@ -59,41 +72,42 @@ chrome.storage.local.get({ enabled: true, day, today: 0, total: 0, history: [] }
   const today = s.day === day ? s.today : 0;
   const balance = s.total * RATE;
   const pct = Math.min(100, (balance / MIN_PAYOUT) * 100);
-
-  countUp($("today"), today, (n) => Math.round(n));
-  countUp($("total"), s.total, (n) => Math.round(n));
-  countUp($("sim"), balance, (n) => "₹" + n.toFixed(2));
-  countUp($("pct"), pct, (n) => Math.round(n) + "%");
-  setTimeout(() => { $("bar").style.width = pct + "%"; }, 50);
+  countUp("today", today, (n) => Math.round(n));
+  countUp("total", s.total, (n) => Math.round(n));
+  countUp("sim", balance, (n) => "₹" + n.toFixed(2));
+  countUp("pct", pct, (n) => Math.round(n) + "%");
+  setTimeout(() => { const bar = $("bar"); if (bar) bar.style.width = pct + "%"; }, 50);
   renderLog(s.history);
-
-  $("on").checked = s.enabled;
-  $("on").addEventListener("change", () => chrome.storage.local.set({ enabled: $("on").checked }));
+  const box = $("on");
+  if (box) {
+    box.checked = s.enabled;
+    box.addEventListener("change", () => chrome.storage.local.set({ enabled: box.checked }));
+  }
 });
 
-// Slide-down earnings activity
-$("accBtn").addEventListener("click", () => {
-  const open = $("accPanel").classList.toggle("open");
+on("accBtn", "click", () => {
+  const panel = $("accPanel");
+  if (!panel) return;
+  const open = panel.classList.toggle("open");
   $("accBtn").setAttribute("aria-expanded", open);
 });
 
-// Tabs
-document.querySelectorAll("nav button").forEach((b) => {
+/* ---------- tabs + payout chips ---------- */
+document.querySelectorAll("nav button[data-tab]").forEach((b) => {
   b.addEventListener("click", () => {
-    document.querySelectorAll("nav button").forEach((x) => x.setAttribute("aria-selected", x === b));
+    document.querySelectorAll("nav button[data-tab]").forEach((x) => x.setAttribute("aria-selected", x === b));
     document.querySelectorAll("section").forEach((s) => s.classList.toggle("on", s.id === b.dataset.tab));
   });
 });
-
-// Payout method chips
 document.querySelectorAll(".chip2[data-m]").forEach((c) => {
   c.addEventListener("click", () => {
     document.querySelectorAll(".chip2[data-m]").forEach((x) => x.setAttribute("aria-pressed", x === c));
   });
 });
 
-// Coin celebration
-$("coin").addEventListener("click", (e) => {
+/* ---------- coin celebration ---------- */
+const NOTE = `<svg viewBox="0 0 64 64" width="30" height="30" aria-hidden="true"><path d="M14 30C6 26 2 20 4 12c6 2 10 6 12 12z" fill="#efede8" stroke="#121212" stroke-width="3" stroke-linejoin="round"/><path d="M50 30c8-4 12-10 10-18-6 2-10 6-12 12z" fill="#efede8" stroke="#121212" stroke-width="3" stroke-linejoin="round"/><rect x="12" y="22" width="40" height="24" rx="3" fill="#22c55e" stroke="#121212" stroke-width="3"/><circle cx="32" cy="34" r="8" fill="#bbf7d0" stroke="#121212" stroke-width="2"/><path d="M28.5 30h7M28.5 33h7M28.5 30h2.5a3 3 0 0 1 0 6h-2.5l4.5 4" fill="none" stroke="#121212" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+on("coin", "click", (e) => {
   if (reduce) return;
   const r = e.currentTarget.getBoundingClientRect();
   const colors = ["#22c55e", "#c084fc", "#f59e0b", "#efede8"];
@@ -107,19 +121,32 @@ $("coin").addEventListener("click", (e) => {
       { duration: 600, easing: "ease-out" }
     ).onfinish = () => d.remove();
   }
-  const SUPABASE_URL = "https://ofybiuthkpfnbcadhdjp.supabase.co";
-const SUPABASE_KEY = "sb_publishable_WO0YoJ6Od4-ZkKJHxz_eZQ_pU9lnGNj"; // public key, safe in the extension
+  for (let i = 0; i < 4; i++) {
+    const m = document.createElement("div");
+    m.innerHTML = NOTE;
+    m.style.cssText = `position:fixed;left:${r.left + 4 + i * 14}px;top:${r.top}px;pointer-events:none;z-index:9`;
+    document.body.appendChild(m);
+    m.animate(
+      [{ transform: "translateY(0) rotate(0)", opacity: 1 }, { transform: `translateY(-64px) rotate(${(i - 1.5) * 22}deg)`, opacity: 0 }],
+      { duration: 900, delay: i * 80, easing: "ease-out", fill: "backwards" }
+    ).onfinish = () => m.remove();
+  }
+});
 
+/* ---------- account ---------- */
 function showAccount(session) {
-  $("authOut").style.display = session ? "none" : "block";
-  $("authIn").style.display = session ? "block" : "none";
-  if (session) $("who").textContent = session.email;
+  const out = $("authOut"), inn = $("authIn");
+  if (out) out.style.display = session ? "none" : "block";
+  if (inn) inn.style.display = session ? "block" : "none";
+  if (session) setText("who", session.email || "Signed in");
 }
 chrome.storage.local.get({ session: null }, ({ session }) => showAccount(session));
+chrome.storage.onChanged.addListener((changes) => {
+  if (changes.session) showAccount(changes.session.newValue || null);
+});
 
 async function doSignIn() {
-  const msg = $("authMsg");
-  msg.textContent = "Signing in…";
+  setText("authMsg", "Signing in…");
   try {
     const res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
       method: "POST",
@@ -131,16 +158,16 @@ async function doSignIn() {
     const session = { access_token: data.access_token, refresh_token: data.refresh_token, expires_at: data.expires_at, email: data.user.email };
     await chrome.storage.local.set({ session });
     $("pw").value = "";
-    msg.textContent = "";
+    setText("authMsg", "");
     showAccount(session);
   } catch (e) {
-    msg.textContent = e.message;
+    setText("authMsg", e.message);
   }
 }
-$("signin").addEventListener("click", doSignIn);
-$("pw").addEventListener("keydown", (e) => { if (e.key === "Enter") doSignIn(); });
+on("signin", "click", doSignIn);
+on("pw", "keydown", (e) => { if (e.key === "Enter") doSignIn(); });
 
-$("signout").addEventListener("click", async () => {
+on("signout", "click", async () => {
   const { session } = await chrome.storage.local.get({ session: null });
   if (session) {
     fetch(`${SUPABASE_URL}/auth/v1/logout`, { method: "POST", headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${session.access_token}` } }).catch(() => {});
@@ -148,4 +175,10 @@ $("signout").addEventListener("click", async () => {
   await chrome.storage.local.remove("session");
   showAccount(null);
 });
-});
+
+function oauthLogin(provider) {
+  setText("authMsg", "Finish signing in in the window that opens, then click the Glance icon again.");
+  chrome.runtime.sendMessage({ type: "oauth", provider });
+}
+on("oauthGoogle", "click", () => oauthLogin("google"));
+on("oauthGithub", "click", () => oauthLogin("github"));
