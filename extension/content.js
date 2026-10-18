@@ -1,5 +1,5 @@
-// Privacy: this script only measures the LENGTH of the newest AI reply to know when it has
-// finished. It never stores, sends or logs any chat text.
+// Privacy: this script only watches how LONG the newest AI reply is, to know when a new reply
+// starts. It never stores, sends or logs any chat text.
 (() => {
   const SITES = {
     "chatgpt.com": '[data-message-author-role="assistant"]',
@@ -9,14 +9,12 @@
   const selector = SITES[location.hostname];
   if (!selector) return;
 
-  const SETTLE_POLLS = 3;      // reply must stop changing for ~3 seconds
   const MIN_GAP_MS = 20000;    // at most one ad per 20 seconds
-  const AD_LIFETIME_MS = 15000;
   const REWARD_VIEW_MS = 1000; // ad must be on screen this long to count
 
   const seen = new WeakSet();
-  let tracked = null, lastLen = 0, stable = 0, grew = false, lastAdAt = 0;
-  // Replies already on the page when it loads never trigger an ad.
+  let tracked = null, lastLen = 0, lastAdAt = 0;
+  // Replies already on the page when it loads never get an ad.
   setTimeout(() => document.querySelectorAll(selector).forEach((e) => seen.add(e)), 1500);
 
   function newestReply() {
@@ -24,58 +22,61 @@
     return all.length ? all[all.length - 1] : null;
   }
 
+  // A new reply has started when the newest reply element begins to grow.
   function poll() {
     const el = newestReply();
     if (!el) return;
     const len = el.textContent ? el.textContent.length : 0;
-    if (el !== tracked) { tracked = el; lastLen = len; stable = 0; grew = false; return; }
-    if (len !== lastLen) { lastLen = len; stable = 0; grew = true; return; }
-    if (seen.has(el)) return;
-    if (grew && len > 0 && ++stable >= SETTLE_POLLS) { seen.add(el); maybeShowAd(); }
+    if (el !== tracked) { tracked = el; lastLen = len; return; }
+    if (len === lastLen) return;
+    lastLen = len;
+    if (!seen.has(el) && len > 0) { seen.add(el); maybeShowAd(el); }
   }
 
-  function maybeShowAd() {
+  function maybeShowAd(reply) {
     if (!chrome.runtime || !chrome.runtime.id) return; // extension was reloaded; stop quietly
     if (Date.now() - lastAdAt < MIN_GAP_MS || document.visibilityState !== "visible") return;
     chrome.storage.local.get({ enabled: true, session: null }, ({ enabled, session }) => {
       if (!enabled || !session) return; // ads only for signed-in users, so every view belongs to an account
       lastAdAt = Date.now();
-      getAd().then((ad) => ad && showAd(ad));
+      getAd().then((ad) => ad && placeAd(reply, ad));
     });
   }
 
-  function showAd(ad) {
+  // Inserts a one-line ad just above the AI reply, inside the chat.
+  function placeAd(reply, ad) {
+    if (!reply.isConnected || !reply.parentNode) return;
     const host = document.createElement("div");
+    host.setAttribute("data-glance-ad", "");
     const root = host.attachShadow({ mode: "closed" });
     root.innerHTML = `<style>
-      .c{position:fixed;right:16px;bottom:16px;z-index:2147483647;width:280px;background:#1b1b1b;color:#efede8;
-        font:14px system-ui,sans-serif;padding:14px;clip-path:polygon(0 0,calc(100% - 12px) 0,100% 12px,100% 100%,12px 100%,0 calc(100% - 12px))}
-      .l{font:11px ui-monospace,monospace;letter-spacing:.08em;color:#8a8a8a}
-      .t{font-weight:700;margin:6px 0 4px}.b{color:#b5b5b5;line-height:1.4}
-      a{display:inline-block;margin-top:10px;background:#efede8;color:#121212;padding:6px 12px;text-decoration:none;font-weight:600}
-      button{position:absolute;top:6px;right:8px;background:none;border:0;color:#8a8a8a;font-size:18px;cursor:pointer}
-    </style><div class="c"><button aria-label="Close ad">×</button><div class="l">AD · GLANCE</div>
-    <div class="t"></div><div class="b"></div><a target="_blank" rel="noopener noreferrer"></a></div>`;
-    const card = root.querySelector(".c");
-    root.querySelector(".t").textContent = ad.title;
-    root.querySelector(".l").textContent = ad.label || "AD · GLANCE";
-    root.querySelector(".b").textContent = ad.body;
-    const a = root.querySelector("a"); a.textContent = ad.cta; a.href = ad.url;
-    const remove = () => { io.disconnect(); clearTimeout(viewTimer); host.remove(); };
-    root.querySelector("button").addEventListener("click", remove);
-    document.body.appendChild(host);
+      :host{display:block}
+      .row{display:flex;align-items:center;gap:10px;padding:10px 0;margin-bottom:10px;border-bottom:1px solid rgba(128,128,128,.25);font:inherit;color:inherit}
+      .ic{flex:none;width:22px;height:22px;border-radius:5px;display:grid;place-items:center;font:700 13px system-ui,sans-serif;color:#121212}
+      a{color:#3b82f6;font-weight:600;text-decoration:none}
+      a:hover{text-decoration:underline}
+      .tag{margin-left:auto;flex:none;font:11px ui-monospace,Consolas,monospace;letter-spacing:.06em;opacity:.55}
+    </style><div class="row"><span class="ic"></span><a target="_blank" rel="noopener noreferrer"></a><span class="tag"></span></div>`;
+    const row = root.querySelector(".row");
+    const ic = root.querySelector(".ic");
+    ic.textContent = (ad.title || "A").charAt(0).toUpperCase();
+    ic.style.background = ad.color || "#22c55e";
+    const a = root.querySelector("a");
+    a.textContent = ad.text || ad.title;
+    a.href = ad.url;
+    root.querySelector(".tag").textContent = ad.label || "AD";
+    reply.parentNode.insertBefore(host, reply);
 
     let viewTimer = null, counted = false;
     const io = new IntersectionObserver(([e]) => {
       clearTimeout(viewTimer);
       if (e.isIntersecting && e.intersectionRatio >= 0.5 && !counted) {
         viewTimer = setTimeout(() => {
-          if (document.visibilityState === "visible") { counted = true; countImpression(ad); }
+          if (document.visibilityState === "visible") { counted = true; io.disconnect(); countImpression(ad); }
         }, REWARD_VIEW_MS);
       }
     }, { threshold: [0.5] });
-    io.observe(card);
-    setTimeout(remove, AD_LIFETIME_MS);
+    io.observe(row);
   }
 
   function countImpression(ad) {
