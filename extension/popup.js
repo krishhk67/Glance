@@ -61,7 +61,7 @@ function renderLog(history) {
     left.append(name, when);
     const amt = document.createElement("span");
     amt.className = h.paise > 0 ? "amt" : "amt dim";
-    amt.textContent = h.paise > 0 ? "+₹" + (h.paise / 100).toFixed(2) : "Viewed";
+    amt.textContent = "+₹" + (h.paise / 100).toFixed(2) + " credited";
     li.append(left, amt);
     ul.appendChild(li);
   });
