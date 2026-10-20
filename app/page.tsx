@@ -190,7 +190,11 @@ export default function Home() {
           ))}
         </div>
       </section>
-
+      <footer className="mt-12 flex flex-wrap items-center gap-6 border-t border-line pt-6 text-sm text-neutral-400">
+        <a href="/privacy" className="hover:text-paper">Privacy</a>
+        <a href="/terms" className="hover:text-paper">Terms</a>
+        <span>© {new Date().getFullYear()} {BRAND}</span>
+      </footer>
       {authOpen && (
         <div className="fixed inset-0 z-10 grid place-items-center bg-black/70 p-5" onClick={() => setAuthOpen(false)}>
           <div className="cut w-full max-w-sm bg-panel p-6" role="dialog" aria-label="Sign in" onClick={(e) => e.stopPropagation()}>
