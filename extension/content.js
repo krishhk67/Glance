@@ -12,6 +12,10 @@
   const DEBUG = false; // set to true to see step-by-step logs in the page console (counts only, never chat text)
   const log = (...a) => { if (DEBUG) console.log("[Glance]", ...a); };
 
+  // false = no "AD" text on the ad line (the row still has a tooltip and screen-reader label).
+  // Set to true before submitting to the Chrome Web Store: stores expect ads to be clearly marked.
+  const SHOW_AD_LABEL = false;
+
   const MIN_GAP_MS = 20000;    // at most one ad per 20 seconds
   const REWARD_VIEW_MS = 1000; // ad must be on screen this long to count
 
@@ -65,15 +69,16 @@
     const root = host.attachShadow({ mode: "closed" });
     root.innerHTML = `<style>
       :host{display:block}
-      .row{display:flex;align-items:center;gap:12px;padding:12px 0;margin-bottom:10px;border-bottom:1px solid rgba(128,128,128,.25);font:inherit;color:inherit}
-      .ic{flex:none;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font:700 15px system-ui,sans-serif;color:#121212}
-      a{font-size:17px;font-weight:700;line-height:1.3;text-decoration:none}
+      .row{display:flex;align-items:center;gap:10px;padding:10px 0;margin-bottom:10px;border-bottom:1px solid rgba(128,128,128,.25);color:inherit}
+      .ic{flex:none;width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font:700 14px system-ui,"Segoe UI",Roboto,sans-serif;color:#121212}
+      a{font:600 15px/1.35 system-ui,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;text-decoration:none}
       a:hover{text-decoration:underline}
       .tag{margin-left:auto;flex:none;font:11px ui-monospace,Consolas,monospace;letter-spacing:.06em;opacity:.6}
-      .x{flex:none;background:none;border:0;color:inherit;opacity:.55;font:22px/1 system-ui,sans-serif;cursor:pointer;padding:0 4px}
+      .x{flex:none;margin-left:auto;background:none;border:0;color:inherit;opacity:.55;font:22px/1 system-ui,sans-serif;cursor:pointer;padding:0 4px}
+      .tag + .x{margin-left:0}
       .x:hover{opacity:1}
       .x:focus-visible{outline:2px solid #3b82f6;outline-offset:2px;opacity:1}
-    </style><div class="row"><span class="ic"></span><a target="_blank" rel="noopener noreferrer"></a><span class="tag"></span><button class="x" type="button" aria-label="Remove this ad">×</button></div>`;
+    </style><div class="row" role="group" aria-label="Advertisement" title="Ad by Glance"><span class="ic"></span><a target="_blank" rel="noopener noreferrer"></a><span class="tag"></span><button class="x" type="button" aria-label="Remove this ad">×</button></div>`;
     const row = root.querySelector(".row");
     const ic = root.querySelector(".ic");
     ic.textContent = (ad.title || "A").charAt(0).toUpperCase();
@@ -82,7 +87,8 @@
     a.textContent = ad.text || ad.title;
     a.href = /^https:\/\//.test(ad.url) ? ad.url : "#";
     a.style.color = isDarkPage(reply) ? "#60a5fa" : "#2563eb";
-    root.querySelector(".tag").textContent = ad.label || "AD";
+    const tag = root.querySelector(".tag");
+    if (SHOW_AD_LABEL) tag.textContent = ad.label || "AD"; else tag.remove();
     reply.parentNode.insertBefore(host, reply);
     log("ad placed:", ad.title);
 
